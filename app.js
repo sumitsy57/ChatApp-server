@@ -59,6 +59,11 @@ app.use(cookieParser());
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
+app.use((req, res, next) => {
+  console.log("Incoming request origin header:", req.headers.origin);
+  next();
+});
+
 app.use("/api/v1/user", userRoute);
 app.use("/api/v1/chat", chatRoute);
 app.use("/api/v1/admin", adminRoute);
