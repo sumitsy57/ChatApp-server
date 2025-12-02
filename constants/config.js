@@ -1,21 +1,22 @@
 // ./constants/config.js
 
-// Whitelist of allowed client origins (remove trailing slash in env)
+// Whitelist of allowed client origins.
+// Ensure process.env.CLIENT_URL (in your deployed environment) does NOT have a trailing slash.
 const CLIENT_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:4173",
-  process.env.CLIENT_URL, // make sure this is set in Render/Vercel without trailing slash
+  process.env.CLIENT_URL, // e.g. https://chat-app-client-alpha-five.vercel.app
 ].filter(Boolean);
 
 // name of cookie used across server and client
-const CHATTU_TOKEN = "chattu-token";
+export const CHATTU_TOKEN = "chattu-token";
 
 export const corsOptions = {
   origin: (origin, callback) => {
-    // allow non-browser requests (curl, Postman)
+    // allow non-browser tools (curl, Postman) that don't set origin
     if (!origin) return callback(null, true);
 
-    // debug log (optional - remove in prod)
+    // Debug log to help during testing (remove in production)
     console.log("CORS: incoming origin:", origin);
 
     if (CLIENT_ORIGINS.includes(origin)) return callback(null, true);
@@ -26,4 +27,5 @@ export const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
 };
 
-export { CHATTU_TOKEN };
+// export CLIENT_ORIGINS so other modules (like app.js for socket io) can reuse the same whitelist
+export { CLIENT_ORIGINS };

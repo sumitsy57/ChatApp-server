@@ -1,3 +1,4 @@
+// app.js
 import express from "express";
 import { connectDB } from "./utils/features.js";
 import dotenv from "dotenv";
@@ -19,7 +20,7 @@ import {
 } from "./constants/events.js";
 import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.js";
-import { corsOptions } from "./constants/config.js";
+import { corsOptions, CLIENT_ORIGINS } from "./constants/config.js";
 import { socketAuthenticator } from "./middlewares/auth.js";
 
 import userRoute from "./routes/user.js";
@@ -32,7 +33,8 @@ dotenv.config({
 
 const mongoURI = process.env.MONGO_URI;
 const port = process.env.PORT || 3000;
-const envMode = process.env.NODE_ENV.trim() || "PRODUCTION";
+// safe NODE_ENV handling to avoid .trim() on undefined
+const envMode = (process.env.NODE_ENV || "PRODUCTION").trim();
 const adminSecretKey = process.env.ADMIN_SECRET_KEY || "adsasdsdfsdfsdfd";
 const userSocketIDs = new Map();
 const onlineUsers = new Set();
@@ -47,8 +49,13 @@ cloudinary.config({
 
 const app = express();
 const server = createServer(app);
+
+// Use CLIENT_ORIGINS from config for socket.io cors
 const io = new Server(server, {
-  cors: corsOptions,
+  cors: {
+    origin: CLIENT_ORIGINS,
+    credentials: true,
+  },
 });
 
 app.set("io", io);
@@ -56,14 +63,19 @@ app.set("io", io);
 // Using Middlewares Here
 app.use(express.json());
 app.use(cookieParser());
+
+// Apply CORS for Express routes (must be before routes)
 app.use(cors(corsOptions));
+// Ensure OPTIONS preflight is handled
 app.options("*", cors(corsOptions));
 
+// Debug logging for incoming origin header (remove in production)
 app.use((req, res, next) => {
   console.log("Incoming request origin header:", req.headers.origin);
   next();
 });
 
+// Routes
 app.use("/api/v1/user", userRoute);
 app.use("/api/v1/chat", chatRoute);
 app.use("/api/v1/admin", adminRoute);
@@ -72,16 +84,22 @@ app.get("/", (req, res) => {
   res.send("Hello World");
 });
 
+// Socket.io authentication middleware - safer cookie parsing
 io.use((socket, next) => {
-  cookieParser()(
-    socket.request,
-    socket.request.res,
-    async (err) => await socketAuthenticator(err, socket, next)
-  );
+  // socket.request.res may be undefined in some environments; pass empty object
+  cookieParser()(socket.request, {}, (err) => {
+    return socketAuthenticator(err, socket, next);
+  });
 });
 
 io.on("connection", (socket) => {
   const user = socket.user;
+  if (!user) {
+    // Safety: if authentication failed for some reason, disconnect
+    socket.disconnect(true);
+    return;
+  }
+
   userSocketIDs.set(user._id.toString(), socket.id);
 
   socket.on(NEW_MESSAGE, async ({ chatId, members, message }) => {
@@ -112,7 +130,8 @@ io.on("connection", (socket) => {
     try {
       await Message.create(messageForDB);
     } catch (error) {
-      throw new Error(error);
+      console.error("Error saving message:", error);
+      // do not throw uncaught error here — just log
     }
   });
 
@@ -141,12 +160,17 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    userSocketIDs.delete(user._id.toString());
-    onlineUsers.delete(user._id.toString());
-    socket.broadcast.emit(ONLINE_USERS, Array.from(onlineUsers));
+    try {
+      userSocketIDs.delete(user._id.toString());
+      onlineUsers.delete(user._id.toString());
+      socket.broadcast.emit(ONLINE_USERS, Array.from(onlineUsers));
+    } catch (e) {
+      // ignore if user not set or already removed
+    }
   });
 });
 
+// Error handling middleware (should be after routes)
 app.use(errorMiddleware);
 
 server.listen(port, () => {
