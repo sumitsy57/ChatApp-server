@@ -64,10 +64,8 @@ app.set("io", io);
 app.use(express.json());
 app.use(cookieParser());
 
-// Apply CORS for Express routes (must be before routes)
-app.use(cors(corsOptions));
-// Ensure OPTIONS preflight is handled
-app.options("*", cors(corsOptions));
+/app.use(cors({ origin: true, credentials: true }));
+app.options("*", cors({ origin: true, credentials: true }));
 
 // Debug logging for incoming origin header (remove in production)
 app.use((req, res, next) => {
