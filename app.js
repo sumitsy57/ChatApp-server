@@ -64,7 +64,7 @@ app.set("io", io);
 app.use(express.json());
 app.use(cookieParser());
 
-/app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ origin: true, credentials: true }));
 app.options("*", cors({ origin: true, credentials: true }));
 
 // Debug logging for incoming origin header (remove in production)
