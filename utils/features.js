@@ -5,13 +5,12 @@ import { v4 as uuid } from "uuid";
 import { v2 as cloudinary } from "cloudinary";
 import { getBase64, getSockets } from "../lib/helper.js";
 
-// cross-site safe cookies (Vercel client, Render server)
 const cookieOptions = {
-  maxAge: 15 * 24 * 60 * 60 * 1000, // 15 days
+  maxAge: 15 * 24 * 60 * 60 * 1000,
   sameSite: "none",
   httpOnly: true,
-  secure: true,  // Render uses HTTPS
-  path: "/",     // VERY important
+  secure: true,
+  path: "/",
 };
 
 const connectDB = (uri) => {
@@ -43,6 +42,7 @@ const sendToken = (res, user, statusCode = 200, message = "") => {
       success: true,
       message,
       user: userObj,
+      token,            // 👈 add token here
     });
 };
 
@@ -82,9 +82,7 @@ const uploadFilesToCloudinary = async (files = []) => {
   }
 };
 
-const deletFilesFromCloudinary = async (public_ids) => {
-  // implement if needed
-};
+const deletFilesFromCloudinary = async (public_ids) => {};
 
 export {
   connectDB,
