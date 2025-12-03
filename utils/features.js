@@ -5,16 +5,13 @@ import { v4 as uuid } from "uuid";
 import { v2 as cloudinary } from "cloudinary";
 import { getBase64, getSockets } from "../lib/helper.js";
 
-// 👉 Always use cross-site safe cookie settings for Render/Vercel
-//    - SameSite=None
-//    - Secure=true
-//    This is required because your client and server are on different domains.
+// cross-site safe cookies (Vercel client, Render server)
 const cookieOptions = {
   maxAge: 15 * 24 * 60 * 60 * 1000, // 15 days
   sameSite: "none",
   httpOnly: true,
-  secure: true,  // Render uses HTTPS, so this is fine
-  path: "/",     // VERY important for CORS cookies
+  secure: true,  // Render uses HTTPS
+  path: "/",     // VERY important
 };
 
 const connectDB = (uri) => {
@@ -86,7 +83,7 @@ const uploadFilesToCloudinary = async (files = []) => {
 };
 
 const deletFilesFromCloudinary = async (public_ids) => {
-  // implement if you need deletions
+  // implement if needed
 };
 
 export {
