@@ -5,12 +5,13 @@ import { v4 as uuid } from "uuid";
 import { v2 as cloudinary } from "cloudinary";
 import { getBase64, getSockets } from "../lib/helper.js";
 
+// Cross-site safe cookie settings for Vercel (client) + Render (server)
 const cookieOptions = {
-  maxAge: 15 * 24 * 60 * 60 * 1000,
+  maxAge: 15 * 24 * 60 * 60 * 1000, // 15 days
   sameSite: "none",
   httpOnly: true,
-  secure: true,
-  path: "/",
+  secure: true,                     // Render uses HTTPS
+  path: "/",                        // IMPORTANT
 };
 
 const connectDB = (uri) => {
@@ -24,7 +25,7 @@ const connectDB = (uri) => {
 
 const sendToken = (res, user, statusCode = 200, message = "") => {
   if (!process.env.JWT_SECRET) {
-    console.warn("JWT_SECRET is not set. Please set JWT_SECRET in your environment.");
+    console.warn("JWT_SECRET is not set.");
   }
 
   const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET, {
@@ -42,7 +43,7 @@ const sendToken = (res, user, statusCode = 200, message = "") => {
       success: true,
       message,
       user: userObj,
-      token,            // 👈 add token here
+      token, // also send in body so client can use Authorization header
     });
 };
 
@@ -82,7 +83,9 @@ const uploadFilesToCloudinary = async (files = []) => {
   }
 };
 
-const deletFilesFromCloudinary = async (public_ids) => {};
+const deletFilesFromCloudinary = async (public_ids) => {
+  // implement if needed
+};
 
 export {
   connectDB,

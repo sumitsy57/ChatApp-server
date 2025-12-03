@@ -8,10 +8,8 @@ import { User } from "../models/user.js";
 
 // helper: get token from cookie OR Authorization header
 const getTokenFromRequest = (req) => {
-  // cookie: chattu-token
   const cookieToken = req.cookies[CHATTU_TOKEN];
 
-  // header: Authorization: Bearer <token>
   const authHeader = req.headers.authorization || req.headers.Authorization;
   let headerToken;
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -47,7 +45,6 @@ const adminOnly = (req, res, next) => {
       return next(new ErrorHandler("Only Admin can access this route", 401));
 
     const secretKey = jwt.verify(token, process.env.JWT_SECRET);
-
     const isMatched = secretKey === adminSecretKey;
 
     if (!isMatched)
@@ -64,7 +61,6 @@ const socketAuthenticator = async (err, socket, next) => {
   try {
     if (err) return next(err);
 
-    // token from cookie or from handshake auth
     const cookieToken = socket.request.cookies[CHATTU_TOKEN];
     const authToken = socket.handshake?.auth?.token;
     const token = cookieToken || authToken;
