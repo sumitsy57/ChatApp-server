@@ -7,6 +7,7 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import { v4 as uuid } from "uuid";
 import cors from "cors";
+import axios from "axios";
 import { v2 as cloudinary } from "cloudinary";
 import {
   CHAT_JOINED,
@@ -65,6 +66,8 @@ app.use("/api/v1/admin", adminRoute);
 app.get("/", (req, res) => {
   res.send("Hello World");
 });
+
+axios.defaults.withCredentials = true;
 
 io.use((socket, next) => {
   cookieParser()(
