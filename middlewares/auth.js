@@ -6,10 +6,14 @@ import { TryCatch } from "./error.js";
 import { CHATTU_TOKEN } from "../constants/config.js";
 import { User } from "../models/user.js";
 
-// helper: get token from cookie OR Authorization header
+/**
+ * Helper: get token from cookie OR Authorization header
+ */
 const getTokenFromRequest = (req) => {
+  // cookie: chattu-token
   const cookieToken = req.cookies[CHATTU_TOKEN];
 
+  // header: Authorization: Bearer <token>
   const authHeader = req.headers.authorization || req.headers.Authorization;
   let headerToken;
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -19,6 +23,9 @@ const getTokenFromRequest = (req) => {
   return cookieToken || headerToken || null;
 };
 
+/**
+ * isAuthenticated middleware
+ */
 const isAuthenticated = TryCatch((req, res, next) => {
   const token = getTokenFromRequest(req);
 
@@ -38,13 +45,18 @@ const isAuthenticated = TryCatch((req, res, next) => {
   next();
 });
 
+/**
+ * adminOnly middleware
+ */
 const adminOnly = (req, res, next) => {
   try {
     const token = req.cookies["chattu-admin-token"];
+
     if (!token)
       return next(new ErrorHandler("Only Admin can access this route", 401));
 
     const secretKey = jwt.verify(token, process.env.JWT_SECRET);
+
     const isMatched = secretKey === adminSecretKey;
 
     if (!isMatched)
@@ -57,6 +69,9 @@ const adminOnly = (req, res, next) => {
   }
 };
 
+/**
+ * socketAuthenticator
+ */
 const socketAuthenticator = async (err, socket, next) => {
   try {
     if (err) return next(err);
