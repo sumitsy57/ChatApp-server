@@ -1,26 +1,20 @@
-// server/src/constants/config.js
+// constants/config.js
 
-// client origin(s)
+export const CHATTU_TOKEN = "chattu-token";
+
 const CLIENT_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:4173",
-  "https://chat-app-client-alpha-five.vercel.app", // your Vercel URL
+  process.env.CLIENT_URL,     // https://chat-app-client-alpha-five.vercel.app
 ].filter(Boolean);
 
-const CHATTU_TOKEN = "chattu-token";
-
-const corsOptions = {
+export const corsOptions = {
   origin: (origin, callback) => {
-    // allow tools like Postman (no origin)
     if (!origin) return callback(null, true);
-
     if (CLIENT_ORIGINS.includes(origin)) return callback(null, true);
-
     return callback(new Error("CORS: origin not allowed - " + origin));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
 };
-
-export { corsOptions, CHATTU_TOKEN };

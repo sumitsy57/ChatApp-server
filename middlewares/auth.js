@@ -6,12 +6,10 @@ import { TryCatch } from "./error.js";
 import { CHATTU_TOKEN } from "../constants/config.js";
 import { User } from "../models/user.js";
 
-// helper: read token from cookie OR header
+/** Helper – read token from cookie OR Authorization header */
 const getTokenFromRequest = (req) => {
-  // cookie
   const cookieToken = req.cookies[CHATTU_TOKEN];
 
-  // Authorization header
   const authHeader = req.headers.authorization || req.headers.Authorization;
   let headerToken = null;
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -44,16 +42,14 @@ const adminOnly = (req, res, next) => {
   try {
     const token = req.cookies["chattu-admin-token"];
 
-    if (!token) {
+    if (!token)
       return next(new ErrorHandler("Only Admin can access this route", 401));
-    }
 
     const secretKey = jwt.verify(token, process.env.JWT_SECRET);
     const isMatched = secretKey === adminSecretKey;
 
-    if (!isMatched) {
+    if (!isMatched)
       return next(new ErrorHandler("Only Admin can access this route", 401));
-    }
 
     next();
   } catch (err) {
@@ -70,9 +66,8 @@ const socketAuthenticator = async (err, socket, next) => {
     const authToken = socket.handshake?.auth?.token;
     const token = cookieToken || authToken;
 
-    if (!token) {
+    if (!token)
       return next(new ErrorHandler("Please login to access this route", 401));
-    }
 
     let decodedData;
     try {
@@ -83,9 +78,8 @@ const socketAuthenticator = async (err, socket, next) => {
     }
 
     const user = await User.findById(decodedData._id);
-    if (!user) {
+    if (!user)
       return next(new ErrorHandler("Please login to access this route", 401));
-    }
 
     socket.user = user;
     next();

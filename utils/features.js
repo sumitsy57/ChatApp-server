@@ -1,9 +1,10 @@
-// server/src/utils/features.js
+// utils/features.js
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { v4 as uuid } from "uuid";
 import { v2 as cloudinary } from "cloudinary";
 import { getBase64, getSockets } from "../lib/helper.js";
+import { CHATTU_TOKEN } from "../constants/config.js";
 
 const cookieOptions = {
   maxAge: 15 * 24 * 60 * 60 * 1000, // 15 days
@@ -33,12 +34,12 @@ const sendToken = (res, user, statusCode = 200, message = "") => {
 
   return res
     .status(statusCode)
-    .cookie("chattu-token", token, cookieOptions)
+    .cookie(CHATTU_TOKEN, token, cookieOptions)
     .json({
       success: true,
       message,
       user: userObj,
-      token, // <-- important for client
+      token, // IMPORTANT: used by frontend
     });
 };
 
@@ -65,12 +66,15 @@ const uploadFilesToCloudinary = async (files = []) => {
     });
   });
 
-  const results = await Promise.all(uploadPromises);
-
-  return results.map((result) => ({
-    public_id: result.public_id,
-    url: result.secure_url,
-  }));
+  try {
+    const results = await Promise.all(uploadPromises);
+    return results.map((result) => ({
+      public_id: result.public_id,
+      url: result.secure_url,
+    }));
+  } catch (err) {
+    throw new Error("Error uploading files to cloudinary: " + (err.message || err));
+  }
 };
 
 const deletFilesFromCloudinary = async (public_ids) => {
