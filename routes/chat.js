@@ -1,3 +1,4 @@
+// server/src/routes/chat.js
 import express from "express";
 import {
   addMembers,
@@ -26,28 +27,16 @@ import { attachmentsMulter } from "../middlewares/multer.js";
 
 const app = express.Router();
 
-// After here user must be logged in to access the routes
-
+// all chat routes require login
 app.use(isAuthenticated);
 
 app.post("/new", newGroupValidator(), validateHandler, newGroupChat);
-
 app.get("/my", getMyChats);
-
 app.get("/my/groups", getMyGroups);
-
 app.put("/addmembers", addMemberValidator(), validateHandler, addMembers);
-
-app.put(
-  "/removemember",
-  removeMemberValidator(),
-  validateHandler,
-  removeMember
-);
-
+app.put("/removemember", removeMemberValidator(), validateHandler, removeMember);
 app.delete("/leave/:id", chatIdValidator(), validateHandler, leaveGroup);
 
-// Send Attachments
 app.post(
   "/message",
   attachmentsMulter,
@@ -56,10 +45,8 @@ app.post(
   sendAttachments
 );
 
-// Get Messages
 app.get("/message/:id", chatIdValidator(), validateHandler, getMessages);
 
-// Get Chat Details, rename,delete
 app
   .route("/:id")
   .get(chatIdValidator(), validateHandler, getChatDetails)

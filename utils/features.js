@@ -1,17 +1,16 @@
-// utils/features.js
+// server/src/utils/features.js
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { v4 as uuid } from "uuid";
 import { v2 as cloudinary } from "cloudinary";
 import { getBase64, getSockets } from "../lib/helper.js";
 
-// Cross-site safe cookie settings for Vercel (client) + Render (server)
 const cookieOptions = {
   maxAge: 15 * 24 * 60 * 60 * 1000, // 15 days
   sameSite: "none",
   httpOnly: true,
-  secure: true,                     // Render uses HTTPS
-  path: "/",                        // IMPORTANT
+  secure: true,
+  path: "/",
 };
 
 const connectDB = (uri) => {
@@ -24,17 +23,13 @@ const connectDB = (uri) => {
 };
 
 const sendToken = (res, user, statusCode = 200, message = "") => {
-  if (!process.env.JWT_SECRET) {
-    console.warn("JWT_SECRET is not set.");
-  }
-
   const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET, {
     expiresIn: "7d",
   });
 
   const userObj = user.toObject ? user.toObject() : { ...user };
-  if (userObj.password) delete userObj.password;
-  if (userObj.__v) delete userObj.__v;
+  delete userObj.password;
+  delete userObj.__v;
 
   return res
     .status(statusCode)
@@ -43,7 +38,7 @@ const sendToken = (res, user, statusCode = 200, message = "") => {
       success: true,
       message,
       user: userObj,
-      token, // also send in body so client can use Authorization header
+      token, // <-- important for client
     });
 };
 
@@ -70,17 +65,12 @@ const uploadFilesToCloudinary = async (files = []) => {
     });
   });
 
-  try {
-    const results = await Promise.all(uploadPromises);
+  const results = await Promise.all(uploadPromises);
 
-    const formattedResults = results.map((result) => ({
-      public_id: result.public_id,
-      url: result.secure_url,
-    }));
-    return formattedResults;
-  } catch (err) {
-    throw new Error("Error uploading files to cloudinary: " + (err.message || err));
-  }
+  return results.map((result) => ({
+    public_id: result.public_id,
+    url: result.secure_url,
+  }));
 };
 
 const deletFilesFromCloudinary = async (public_ids) => {
