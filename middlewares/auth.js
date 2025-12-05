@@ -1,4 +1,4 @@
-// server/src/middlewares/auth.js
+// middlewares/auth.js
 import jwt from "jsonwebtoken";
 import { ErrorHandler } from "../utils/utility.js";
 import { adminSecretKey } from "../app.js";
@@ -6,13 +6,14 @@ import { TryCatch } from "./error.js";
 import { CHATTU_TOKEN } from "../constants/config.js";
 import { User } from "../models/user.js";
 
+// helper: read token from cookie OR header
 const getTokenFromRequest = (req) => {
   // cookie
   const cookieToken = req.cookies[CHATTU_TOKEN];
 
-  // header
+  // Authorization header
   const authHeader = req.headers.authorization || req.headers.Authorization;
-  let headerToken;
+  let headerToken = null;
   if (authHeader && authHeader.startsWith("Bearer ")) {
     headerToken = authHeader.substring(7);
   }
@@ -23,18 +24,19 @@ const getTokenFromRequest = (req) => {
 const isAuthenticated = TryCatch((req, res, next) => {
   const token = getTokenFromRequest(req);
 
-  if (!token)
-    return next(new ErrorHandler("Please login to access this route", 401));
-
-  let decoded;
-  try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-  } catch (err) {
-    console.error("JWT error:", err.message);
+  if (!token) {
     return next(new ErrorHandler("Please login to access this route", 401));
   }
 
-  req.user = decoded._id;
+  let decodedData;
+  try {
+    decodedData = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    console.error("JWT verify error:", err.message);
+    return next(new ErrorHandler("Please login to access this route", 401));
+  }
+
+  req.user = decodedData._id;
   next();
 });
 
@@ -42,14 +44,16 @@ const adminOnly = (req, res, next) => {
   try {
     const token = req.cookies["chattu-admin-token"];
 
-    if (!token)
+    if (!token) {
       return next(new ErrorHandler("Only Admin can access this route", 401));
+    }
 
     const secretKey = jwt.verify(token, process.env.JWT_SECRET);
     const isMatched = secretKey === adminSecretKey;
 
-    if (!isMatched)
+    if (!isMatched) {
       return next(new ErrorHandler("Only Admin can access this route", 401));
+    }
 
     next();
   } catch (err) {
@@ -66,25 +70,27 @@ const socketAuthenticator = async (err, socket, next) => {
     const authToken = socket.handshake?.auth?.token;
     const token = cookieToken || authToken;
 
-    if (!token)
-      return next(new ErrorHandler("Please login to access this route", 401));
-
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (e) {
-      console.error("Socket JWT error:", e.message);
+    if (!token) {
       return next(new ErrorHandler("Please login to access this route", 401));
     }
 
-    const user = await User.findById(decoded._id);
-    if (!user)
+    let decodedData;
+    try {
+      decodedData = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (e) {
+      console.error("Socket JWT verify error:", e.message);
       return next(new ErrorHandler("Please login to access this route", 401));
+    }
+
+    const user = await User.findById(decodedData._id);
+    if (!user) {
+      return next(new ErrorHandler("Please login to access this route", 401));
+    }
 
     socket.user = user;
     next();
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return next(new ErrorHandler("Please login to access this route", 401));
   }
 };
